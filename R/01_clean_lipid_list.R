@@ -1,3 +1,74 @@
+#' lipid.list.from.msdial()
+#'
+#' Clean and prepare a character vector prior to input it in the lipid.miner function.
+#'
+#' @param xlsx path to MS-DIAL output file ("Metabolite name" column used as lipid list) 
+#'
+#' @details 
+#' This function is meant to be used prior to clean.lipid.list(), it loads a lipid
+#' list from the specified XLSX file (MS-DIAL output file, uses the Metabolites 
+#' column), makes various substitutions to the lipid names to make them compatible
+#' with the parser (in 02_lipid_miner.R -> lipid.miner()), and returns the lipid
+#' list as a character vector
+#'
+#' @return character vector
+#'
+#' @author Dylan H. Ross
+#' @export
+#'
+
+lipid.list.from.msdial<-function(xlsx){
+  
+  # load lipids from "Metabolite name" column from MS-DIAL results
+  # as character vector
+  msd.lipid.list<-pull(read_xlsx(xlsx), "Metabolite name")
+  
+  # convert lines with multiple values (delimited by |) to only the rightmost value
+  msd.lipid.list.cleaned<-unlist(lapply(strsplit(msd.lipid.list, split = "|", fixed = TRUE), tail, n = 1))
+  
+  # if there are still some lines with "<some_lipid>;<some_lipid>"
+  # split those into separate lines (i.e. decombine)
+  # need to use this complicated setup to distinguish between cases where
+  # the line contains "<some_lipid>;<some_lipid>" or a single lipid that
+  # has the oxygen annotations for a FA e.g. "Cer 18:1;O2/15:0"
+  msd.lipid.list.decombined<-c()
+  n.pre.decombine<-length(msd.lipid.list.cleaned)
+  for (i in 1:n.pre.decombine) {
+    l<-msd.lipid.list.cleaned[i]
+    # ! does not match O after ; !
+    mtch<-regexpr("(?<delim>;[ ]?)[ABCDEFGHIJKLMNPQRSTUVWXYZ]", l, perl = TRUE)
+    cap.len<-attributes(mtch)$capture.length
+    if (cap.len > 0) {
+      split.start.pos<-attributes(mtch)$capture.start
+      split.end.pos<-split.start.pos + cap.len
+      l1<-substr(l, 1, split.start.pos - 1)
+      l2<-substr(l, split.end.pos, nchar(l))
+      # add each of the two split entries to the list
+      msd.lipid.list.decombined<-append(msd.lipid.list.decombined, l1)
+      msd.lipid.list.decombined<-append(msd.lipid.list.decombined, l2)
+    } else {
+      msd.lipid.list.decombined<-append(msd.lipid.list.decombined, l)
+    }
+  }
+  n.post.decombine<-length(msd.lipid.list.decombined)
+  # emit a warning if the length of the list changed due to decombining
+  if (n.pre.decombine != n.post.decombine) {
+    warning("lipid list length has changed due to decombining")
+  }
+  
+  # convert "X C:U" to "X(C:U)"
+  msd.lipid.list.paren<-gsub(" ", "(", msd.lipid.list.decombined)
+  msd.lipid.list.paren[grepl("\\(", msd.lipid.list.paren)]<-unlist(lapply(msd.lipid.list.paren[grepl("\\(", msd.lipid.list.paren)], paste0, ")"))
+  
+  # make some statically defined substitutions
+  msd.lipid.list.subbed<-gsub("CAR", "carnitine", msd.lipid.list.paren)
+  msd.lipid.list.subbed<-gsub("CE", "Cholesterol", msd.lipid.list.subbed)
+  
+  # return as a 1-col data frame?
+  data.frame(msd.lipid.list.subbed)
+}
+
+
 #' clean.lipid.list()
 #'
 #' Clean and prepare a character vector prior to input it in the lipid.miner function.
@@ -19,6 +90,7 @@
 #'
 
 clean.lipid.list<-function(X){
+  
   # if the data had more than one column -> remove the data in the other columns
   cleaned<- X
   if(ncol(cleaned)>0){

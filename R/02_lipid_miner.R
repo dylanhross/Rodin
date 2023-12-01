@@ -49,7 +49,7 @@ lipid.miner <- function(X,name="yourname", TGcollapse.rm=TRUE, output.list=FALSE
   X<- gsub(".*Sulfatide", "Sulfatide(", X,ignore.case = TRUE)
   X<- gsub("Cholesterol", "Cholesterol(", X,ignore.case = TRUE)
   X<- gsub("Sulfatide\\(\\(","Sulfatide(",X,ignore.case = TRUE)
-  X<- gsub("caritine\\(\\(","caritine(",X,ignore.case = TRUE)
+  X<- gsub("carnitine\\(\\(","carnitine(",X,ignore.case = TRUE)
   X<- gsub("PE-NMe2\\(","PE\\(NMe2\\-",X,ignore.case = TRUE)
   X<- gsub("PE-NMe\\(","PE\\(NMe\\-",X,ignore.case = TRUE)
   X<- gsub("\\,n\\-3","",X,ignore.case = TRUE)
