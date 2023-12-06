@@ -56,16 +56,23 @@ lipid.list.from.msdial<-function(xlsx){
     warning("lipid list length has changed due to decombining")
   }
   
+  # remove ;O2 from sphingos?
+  
   # convert "X C:U" to "X(C:U)"
   msd.lipid.list.paren<-gsub(" ", "(", msd.lipid.list.decombined)
   msd.lipid.list.paren[grepl("\\(", msd.lipid.list.paren)]<-unlist(lapply(msd.lipid.list.paren[grepl("\\(", msd.lipid.list.paren)], paste0, ")"))
   
   # make some statically defined substitutions
-  msd.lipid.list.subbed<-gsub("CAR", "carnitine", msd.lipid.list.paren)
-  msd.lipid.list.subbed<-gsub("CE", "Cholesterol", msd.lipid.list.subbed)
+  msd.lipid.list.subbed<-gsub("CAR", "carnitine", msd.lipid.list.paren)  # change names of carnitines
+  msd.lipid.list.subbed<-gsub("_", "/", msd.lipid.list.subbed)  # change _ chain separators to /
+  msd.lipid.list.subbed<-gsub("(?<front>^LP[A-Z][(][0-9]+:[0-9]+)[)]", "\\1/0:0)", msd.lipid.list.subbed, perl = TRUE)  # ensure LPX lipids have explicit 0:0 chain
+  msd.lipid.list.subbed<-gsub("^LP", "P", msd.lipid.list.subbed)  # change LPX lipids to PX
+  msd.lipid.list.subbed<-gsub(";O[0-9]?", "", msd.lipid.list.subbed)  # remove oxygen annotations like ;O2 from sphingos
+  msd.lipid.list.subbed<-gsub("(?<cls>(Cer|SM)[(])", "\\1d", msd.lipid.list.subbed, perl = TRUE)  # add d to sphingos
+  msd.lipid.list.subbed<-gsub("FA[(][0-9]+:[0-9]+[)]", "", msd.lipid.list.subbed)  # get rid of weird FA(C:U) inside of some sphingos
   # others?
   
-  # return as a 1-col data frame?
+  # return as a 1-col data frame
   data.frame(msd.lipid.list.subbed)
 }
 
