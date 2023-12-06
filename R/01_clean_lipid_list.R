@@ -11,7 +11,7 @@
 #' with the parser (in 02_lipid_miner.R -> lipid.miner()), and returns the lipid
 #' list as a character vector
 #'
-#' @return character vector
+#' @return 1 column df with lipid names
 #'
 #' @author Dylan H. Ross
 #' @export
@@ -21,7 +21,7 @@ lipid.list.from.msdial<-function(xlsx){
   
   # load lipids from "Metabolite name" column from MS-DIAL results
   # as character vector
-  msd.lipid.list<-pull(read_xlsx(xlsx), "Metabolite name")
+  msd.lipid.list<-pull(read_xlsx(xlsx, .name_repair = "unique_quiet"), "Metabolite name")
   
   # convert lines with multiple values (delimited by |) to only the rightmost value
   msd.lipid.list.cleaned<-unlist(lapply(strsplit(msd.lipid.list, split = "|", fixed = TRUE), tail, n = 1))
@@ -63,6 +63,7 @@ lipid.list.from.msdial<-function(xlsx){
   # make some statically defined substitutions
   msd.lipid.list.subbed<-gsub("CAR", "carnitine", msd.lipid.list.paren)
   msd.lipid.list.subbed<-gsub("CE", "Cholesterol", msd.lipid.list.subbed)
+  # others?
   
   # return as a 1-col data frame?
   data.frame(msd.lipid.list.subbed)
